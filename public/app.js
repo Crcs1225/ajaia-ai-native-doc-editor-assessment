@@ -153,11 +153,13 @@ async function logout() {
 }
 
 function showLogin() {
+  document.body.classList.add("login-active");
   elements.loginView.hidden = false;
   elements.appShell.hidden = true;
 }
 
 function showApp() {
+  document.body.classList.remove("login-active");
   elements.loginView.hidden = true;
   elements.appShell.hidden = false;
   elements.currentUserLabel.textContent = `${state.currentUser.name} (${state.currentUser.email})`;
