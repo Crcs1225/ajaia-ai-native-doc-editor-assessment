@@ -47,7 +47,8 @@ const elements = {
   toast: document.querySelector("#toast")
 };
 
-const quill = new Quill("#editor", {
+const QuillConstructor = await ensureQuill();
+const quill = new QuillConstructor("#editor", {
   modules: {
     toolbar: "#toolbar"
   },
@@ -56,6 +57,26 @@ const quill = new Quill("#editor", {
 });
 
 await boot();
+
+async function ensureQuill() {
+  if (globalThis.Quill) {
+    return globalThis.Quill;
+  }
+
+  await new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "/vendor/quill.js";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Quill editor failed to load."));
+    document.head.appendChild(script);
+  });
+
+  if (!globalThis.Quill) {
+    throw new Error("Quill editor loaded, but did not expose window.Quill.");
+  }
+
+  return globalThis.Quill;
+}
 
 async function boot() {
   bindEvents();

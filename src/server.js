@@ -8,7 +8,6 @@ import { createStore } from "./storeFactory.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
-const nodeModulesDir = path.join(__dirname, "..", "node_modules");
 const port = Number(process.env.PORT || 3000);
 const store = createStore({ env: process.env, filePath: process.env.DB_FILE || path.join(process.cwd(), "data", "db.json") });
 const sessionSecret = process.env.SESSION_SECRET || "dev-session-secret-change-me";
@@ -136,16 +135,6 @@ async function handleApi(request, response, url) {
 }
 
 async function serveStatic(request, response, pathname) {
-  if (pathname === "/vendor/quill.js") {
-    await sendFile(response, path.join(nodeModulesDir, "quill", "dist", "quill.js"));
-    return;
-  }
-
-  if (pathname === "/vendor/quill.snow.css") {
-    await sendFile(response, path.join(nodeModulesDir, "quill", "dist", "quill.snow.css"));
-    return;
-  }
-
   const safePath = pathname === "/" ? "/index.html" : pathname;
   const normalized = path.normalize(safePath).replace(/^(\.\.[/\\])+/, "");
   const filePath = path.join(publicDir, normalized);
