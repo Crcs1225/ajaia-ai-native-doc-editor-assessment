@@ -53,16 +53,36 @@
 
           <div class="credential-grid">
             <label class="field">
-              <span>Email</span>
+              <span>Sign in email</span>
               <input id="emailInput" type="email" autocomplete="email" value="alex@ajaia.test">
             </label>
             <label class="field">
-              <span>Password</span>
+              <span>Sign in password</span>
               <input id="passwordInput" type="password" autocomplete="current-password" value="password123">
             </label>
           </div>
 
           <button class="primary full-width" type="submit">Sign in</button>
+
+          <div class="register-panel">
+            <div class="login-copy">
+              <h2>Create a review account</h2>
+              <p>Register a new user, then share a document to that account.</p>
+            </div>
+            <label class="field">
+              <span>Name</span>
+              <input id="registerNameInput" type="text" autocomplete="name" placeholder="Jordan Reviewer">
+            </label>
+            <label class="field">
+              <span>New account email</span>
+              <input id="registerEmailInput" type="email" autocomplete="email" placeholder="jordan@example.com">
+            </label>
+            <label class="field">
+              <span>New account password</span>
+              <input id="registerPasswordInput" type="password" autocomplete="new-password" placeholder="At least 8 characters">
+            </label>
+            <button id="registerButton" class="secondary-button full-width" type="button">Create account</button>
+          </div>
         </form>
       </main>
     </section>

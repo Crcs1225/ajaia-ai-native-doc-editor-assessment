@@ -31,6 +31,8 @@
 | Blair Reviewer | blair@ajaia.test | Receive shared documents |
 | Casey Editor | casey@ajaia.test | Additional share target |
 
+Additional reviewers can register from the login screen and then receive shared documents.
+
 ## What Works
 
 - [x] Create document
@@ -40,10 +42,12 @@
 - [x] Formatting persists after refresh
 - [x] Upload `.txt` or `.md`
 - [x] Share document with another seeded user
+- [x] Register new users for sharing review
 - [x] Owned/shared document distinction
 - [x] Persistence for documents and shares
 - [x] At least one automated test
 - [x] Real login/session flow with seeded accounts
+- [x] Convex persistence via `CONVEX_URL`
 - [x] Postgres support via `DATABASE_URL`
 - [x] Server-side HTML sanitization
 - [x] Quill rich-text editor

@@ -15,6 +15,22 @@ function normalizeTitle(title) {
   return clean || "Untitled document";
 }
 
+function normalizeName(name) {
+  const clean = String(name ?? "").trim();
+  if (clean.length < 2) {
+    throw Object.assign(new Error("Name must be at least 2 characters."), { statusCode: 400 });
+  }
+  return clean.slice(0, 80);
+}
+
+function normalizeEmail(email) {
+  const clean = String(email ?? "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
+    throw Object.assign(new Error("Enter a valid email address."), { statusCode: 400 });
+  }
+  return clean;
+}
+
 function summarize(row) {
   return {
     id: row.id,
@@ -88,6 +104,29 @@ export class PostgresDocumentStore {
       [email]
     );
     return result.rows[0] ?? null;
+  }
+
+  async createUser(input = {}) {
+    const user = {
+      id: `user_${randomUUID()}`,
+      name: normalizeName(input.name),
+      email: normalizeEmail(input.email),
+      passwordHash: input.passwordHash
+    };
+    try {
+      const result = await this.pool.query(
+        `INSERT INTO users (id, name, email, password_hash)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, name, email, password_hash AS "passwordHash"`,
+        [user.id, user.name, user.email, user.passwordHash]
+      );
+      return result.rows[0];
+    } catch (error) {
+      if (error.code === "23505") {
+        throw Object.assign(new Error("Email is already registered."), { statusCode: 409 });
+      }
+      throw error;
+    }
   }
 
   async listDocumentsForUser(userId) {
@@ -267,4 +306,3 @@ export class PostgresDocumentStore {
     }
   }
 }
-

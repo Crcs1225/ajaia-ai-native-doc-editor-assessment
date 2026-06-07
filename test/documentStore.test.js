@@ -55,3 +55,23 @@ test("unsupported import file types are rejected", async () => {
   });
 });
 
+test("registered users can be found and duplicate emails are rejected", async () => {
+  await withStore(async (store) => {
+    const user = await store.createUser({
+      name: "Jordan Reviewer",
+      email: "Jordan@example.com",
+      passwordHash: "test-hash"
+    });
+
+    assert.equal(user.email, "jordan@example.com");
+    assert.equal((await store.findUserByEmail("jordan@example.com")).id, user.id);
+    await assert.rejects(
+      () => store.createUser({
+        name: "Jordan Duplicate",
+        email: "JORDAN@example.com",
+        passwordHash: "test-hash"
+      }),
+      /Email is already registered/
+    );
+  });
+});

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { clearSession, createSession, getSessionUserId, verifyPassword } from "./auth.js";
+import { clearSession, createSession, getSessionUserId, hashPassword, verifyPassword } from "./auth.js";
 import { createStore } from "./storeFactory.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -63,6 +63,21 @@ async function handleApi(request, response, url) {
     }
     response.setHeader("Set-Cookie", createSession(user.id, sessionSecret));
     sendJson(response, 200, {
+      user: { id: user.id, name: user.name, email: user.email }
+    });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/register") {
+    const body = await readJson(request);
+    validateRegistration(body);
+    const user = await store.createUser({
+      name: body.name,
+      email: body.email,
+      passwordHash: await hashPassword(body.password)
+    });
+    response.setHeader("Set-Cookie", createSession(user.id, sessionSecret));
+    sendJson(response, 201, {
       user: { id: user.id, name: user.name, email: user.email }
     });
     return;
@@ -182,6 +197,12 @@ function requireSession(request) {
     throw Object.assign(new Error("Authentication required."), { statusCode: 401 });
   }
   return userId;
+}
+
+function validateRegistration(body) {
+  if (String(body.password ?? "").length < 8) {
+    throw Object.assign(new Error("Password must be at least 8 characters."), { statusCode: 400 });
+  }
 }
 
 function sendJson(response, statusCode, payload) {

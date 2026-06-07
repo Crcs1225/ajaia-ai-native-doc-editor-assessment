@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@playwright/test": "^1.60.0",
+    "convex": "^1.40.0",
     "pg": "^8.21.0",
     "quill": "^2.0.2",
     "sanitize-html": "^2.17.4"

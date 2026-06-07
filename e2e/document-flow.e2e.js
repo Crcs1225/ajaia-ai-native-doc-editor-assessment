@@ -62,8 +62,8 @@ async function runFlow() {
 
   try {
     await page.goto(baseURL);
-    await page.getByLabel("Email").fill("alex@ajaia.test");
-    await page.getByLabel("Password").fill("password123");
+    await page.getByLabel("Sign in email").fill("alex@ajaia.test");
+    await page.getByLabel("Sign in password").fill("password123");
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page.getByRole("heading", { name: "All Documents" })).toBeVisible();
@@ -101,8 +101,8 @@ async function runFlow() {
 
     await page.getByLabel("Back to Dashboard").click();
     await page.getByRole("button", { name: "Sign out" }).click();
-    await page.getByLabel("Email").fill("blair@ajaia.test");
-    await page.getByLabel("Password").fill("password123");
+    await page.getByLabel("Sign in email").fill("blair@ajaia.test");
+    await page.getByLabel("Sign in password").fill("password123");
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page.getByText("Shared with me")).toBeVisible();

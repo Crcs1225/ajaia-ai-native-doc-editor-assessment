@@ -17,7 +17,7 @@ Node HTTP server
   |
   | Auth/session, sanitizer, storage adapter
   v
-Postgres DATABASE_URL or local data/db.json fallback
+Convex CONVEX_URL, Postgres DATABASE_URL, or local data/db.json fallback
 ```
 
 ## Frontend
@@ -27,6 +27,7 @@ The frontend lives in `public/`:
 - `index.html` defines the dashboard, editor, toolbar, upload control, and share panel.
 - `styles.css` defines a restrained productivity-tool UI.
 - `app.js` handles login/logout, document CRUD, save state, file import, sharing, and API calls.
+- The login screen supports seeded account shortcuts and registering new review users.
 
 The editor uses Quill, served from local npm assets through `/vendor/quill.js` and `/vendor/quill.snow.css`. This gives the product a more reliable editing surface than raw `contenteditable` while keeping the app lightweight.
 
@@ -37,15 +38,18 @@ The backend lives in `src/`:
 - `server.js` serves static files and JSON API routes.
 - `auth.js` owns password hashing and signed session cookies.
 - `sanitize.js` owns server-side HTML sanitization.
-- `storeFactory.js` selects Postgres when `DATABASE_URL` exists and JSON fallback otherwise.
+- `storeFactory.js` selects explicit `DB_FILE`, Convex, Postgres, then JSON fallback.
+- `convexDocumentStore.js` adapts the existing server API to Convex.
 - `documentStore.js` owns local JSON persistence.
-- `postgresDocumentStore.js` owns production Postgres persistence.
+- `postgresDocumentStore.js` owns optional Postgres persistence.
+- `convex/` owns the Convex schema and document/user/share functions.
 
 Main API behavior:
 
 - `GET /api/users`
 - `GET /api/session`
 - `POST /api/login`
+- `POST /api/register`
 - `POST /api/logout`
 - `GET /api/documents`
 - `POST /api/documents`
@@ -58,7 +62,7 @@ Main API behavior:
 
 The storage model contains:
 
-- `users`: seeded review users with PBKDF2 password hashes.
+- `users`: seeded and registered review users with PBKDF2 password hashes.
 - `documents`: title, HTML content, owner ID, created timestamp, updated timestamp.
 - `shares`: document ID, shared user ID, role, created timestamp.
 
@@ -66,7 +70,7 @@ Each document has exactly one owner. Shared users can open and edit shared docum
 
 ## Access Logic
 
-Access rules are centralized in `DocumentStore`:
+Access rules are centralized in the store adapters:
 
 - Owners can read, edit, and share their documents.
 - Shared users can read and edit documents shared with them.
@@ -98,6 +102,8 @@ Automated tests use Node's built-in test runner and Playwright:
 - Auth tests: verify password hashing and signed session validation.
 - Sanitizer test: verifies unsafe HTML is stripped while formatting remains.
 - Store factory test: verifies Postgres is selected when `DATABASE_URL` is configured.
+- Registration test: verifies newly registered users can be looked up and duplicate emails are rejected.
+- Convex smoke verification: registers two users against Convex, creates a document, shares it, and verifies recipient `Shared with Me`.
 - E2E test: verifies login, create, edit, save, share, logout, and recipient access.
 
 Manual verification covers the end-to-end reviewer flow:
@@ -105,12 +111,11 @@ Manual verification covers the end-to-end reviewer flow:
 - Create, rename, edit, save, refresh, reopen.
 - Format content with toolbar controls.
 - Import `.txt` or `.md`.
-- Share with another seeded user.
+- Share with another seeded or newly registered user.
 - Sign out, sign in as the recipient, and confirm owned/shared distinction.
 
 ## Deprioritized Work
 
-- Open user registration.
 - Real-time collaboration indicators.
 - Comments and suggestions.
 - Version history.

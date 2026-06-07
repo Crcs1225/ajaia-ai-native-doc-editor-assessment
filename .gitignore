@@ -4,3 +4,8 @@ server.err.log
 node_modules/
 test-results/
 playwright-report/
+
+.env.local
+.agents/
+skills-lock.json
+debug.log

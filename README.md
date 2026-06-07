@@ -15,8 +15,9 @@ Lightweight collaborative document editor built for the AI-Native Full Stack Dev
 - File import for `.txt` and `.md` files.
 - Simple sharing model with owner and shared users.
 - Visible distinction between owned documents and shared documents.
-- Postgres persistence through `DATABASE_URL`, with local JSON fallback for quick review.
+- Convex cloud persistence through `CONVEX_URL`, with Postgres and local JSON fallback paths.
 - Email/password login with signed HTTP-only session cookies.
+- Open registration for additional review users.
 - Server-side HTML sanitization before document content is stored.
 - Automated unit tests plus Playwright E2E coverage.
 
@@ -25,8 +26,9 @@ Lightweight collaborative document editor built for the AI-Native Full Stack Dev
 - Node.js HTTP server.
 - Browser HTML/CSS/JavaScript frontend.
 - Quill rich-text editor served from installed npm assets.
+- Convex persistent backend for hosted review storage.
 - `pg` Postgres adapter for production deployment.
-- JSON file persistence at `data/db.json` when `DATABASE_URL` is not set.
+- JSON file persistence at `data/db.json` when Convex/Postgres are not configured.
 - `sanitize-html` for server-side document sanitization.
 - Node built-in test runner.
 - Playwright E2E runner.
@@ -94,6 +96,8 @@ password123
 7. Sign out and sign in as `Blair Reviewer`.
 8. Confirm the document appears under `Shared with me`.
 
+You can also create a new account from the login screen, sign back in as the owner, and share a document with the newly registered user.
+
 ## File Upload Support
 
 Supported file types:
@@ -105,24 +109,32 @@ Unsupported file types show a validation error. `.docx` import is intentionally 
 
 ## Persistence Notes
 
-For production or hosted demos, set:
+For the current Convex-backed setup, set:
+
+```text
+CONVEX_URL=https://your-deployment.convex.cloud
+SESSION_SECRET=replace-with-a-long-random-secret
+```
+
+The local `.env.local` file created by Convex is intentionally gitignored.
+
+Optional Postgres fallback:
 
 ```text
 DATABASE_URL=postgres://...
 SESSION_SECRET=replace-with-a-long-random-secret
 ```
 
-When `DATABASE_URL` is not set, the app falls back to:
+When neither Convex nor Postgres is configured, the app falls back to:
 
 ```text
 data/db.json
 ```
 
-The JSON fallback keeps local setup simple. Postgres is the recommended deployment mode.
+The JSON fallback keeps local setup simple. Convex is now the preferred deployed persistence layer for this assessment.
 
 ## Known Tradeoffs
 
-- Seeded accounts instead of open registration.
 - No real-time collaborative cursors.
 - No comments or suggestion mode.
 - No `.docx` import.

@@ -17,6 +17,22 @@ function ensureString(value) {
   return typeof value === "string" ? value : "";
 }
 
+function normalizeName(name) {
+  const clean = String(name ?? "").trim();
+  if (clean.length < 2) {
+    throw Object.assign(new Error("Name must be at least 2 characters."), { statusCode: 400 });
+  }
+  return clean.slice(0, 80);
+}
+
+function normalizeEmail(email) {
+  const clean = String(email ?? "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
+    throw Object.assign(new Error("Enter a valid email address."), { statusCode: 400 });
+  }
+  return clean;
+}
+
 function summarizeDocument(document, owner, shareCount = 0) {
   return {
     id: document.id,
@@ -73,6 +89,23 @@ export class DocumentStore {
   async findUserByEmail(email) {
     const db = await this.#read();
     return db.users.find((user) => user.email.toLowerCase() === String(email).toLowerCase()) ?? null;
+  }
+
+  async createUser(input = {}) {
+    const db = await this.#read();
+    const email = normalizeEmail(input.email);
+    if (db.users.some((user) => user.email.toLowerCase() === email)) {
+      throw Object.assign(new Error("Email is already registered."), { statusCode: 409 });
+    }
+    const user = {
+      id: `user_${randomUUID()}`,
+      name: normalizeName(input.name),
+      email,
+      passwordHash: input.passwordHash
+    };
+    db.users.push(user);
+    await this.#write(db);
+    return user;
   }
 
   async listDocumentsForUser(userId) {

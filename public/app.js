@@ -13,6 +13,10 @@ const elements = {
   loginForm: document.querySelector("#loginForm"),
   emailInput: document.querySelector("#emailInput"),
   passwordInput: document.querySelector("#passwordInput"),
+  registerNameInput: document.querySelector("#registerNameInput"),
+  registerEmailInput: document.querySelector("#registerEmailInput"),
+  registerPasswordInput: document.querySelector("#registerPasswordInput"),
+  registerButton: document.querySelector("#registerButton"),
   profileCards: document.querySelectorAll(".profile-card"),
   appShell: document.querySelector("#appShell"),
   dashboardView: document.querySelector("#dashboardView"),
@@ -85,6 +89,7 @@ async function boot() {
 
 function bindEvents() {
   elements.loginForm.addEventListener("submit", login);
+  elements.registerButton.addEventListener("click", register);
   elements.profileCards.forEach((card) => {
     card.addEventListener("click", () => {
       elements.emailInput.value = card.dataset.email;
@@ -145,6 +150,30 @@ async function login(event) {
     state.currentDocumentId = "";
     localStorage.removeItem("ajaia.currentDocumentId");
     showToast("Signed in.");
+    showApp();
+    await loadUsers();
+    await loadDocuments();
+    renderEditorEmpty();
+    showDashboard();
+  } catch (error) {
+    showToast(error.message, true);
+  }
+}
+
+async function register() {
+  try {
+    const data = await api("/api/register", {
+      method: "POST",
+      body: {
+        name: elements.registerNameInput.value,
+        email: elements.registerEmailInput.value,
+        password: elements.registerPasswordInput.value
+      }
+    });
+    state.currentUser = data.user;
+    state.currentDocumentId = "";
+    localStorage.removeItem("ajaia.currentDocumentId");
+    showToast("Account created.");
     showApp();
     await loadUsers();
     await loadDocuments();

@@ -294,6 +294,23 @@ select:focus {
   gap: 10px;
 }
 
+.register-panel {
+  border-top: 1px solid rgba(199, 196, 216, 0.55);
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 22px;
+}
+
+.register-panel .login-copy h2 {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.register-panel .login-copy p {
+  margin-bottom: 8px;
+}
+
 .field {
   display: grid;
   gap: 6px;
