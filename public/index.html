@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ajaia Docs Lite</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">A</div>
+          <div>
+            <h1>Ajaia Docs Lite</h1>
+            <p>Focused collaborative editing</p>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Current user</span>
+          <select id="userSelect"></select>
+        </label>
+
+        <div class="actions">
+          <button id="createDocument" class="primary">New document</button>
+          <label class="upload-button">
+            Import .txt/.md
+            <input id="fileImport" type="file" accept=".txt,.md">
+          </label>
+        </div>
+
+        <p class="hint">Uploads support .txt and .md files. Seeded users simulate login so sharing can be reviewed quickly.</p>
+
+        <section>
+          <div class="section-heading">
+            <h2>Owned</h2>
+            <span id="ownedCount">0</span>
+          </div>
+          <div id="ownedDocuments" class="document-list"></div>
+        </section>
+
+        <section>
+          <div class="section-heading">
+            <h2>Shared with me</h2>
+            <span id="sharedCount">0</span>
+          </div>
+          <div id="sharedDocuments" class="document-list"></div>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <input id="titleInput" class="title-input" aria-label="Document title" value="Select or create a document">
+          <div class="status-row">
+            <span id="ownerLabel">No document selected</span>
+            <span id="saveStatus">Idle</span>
+          </div>
+        </header>
+
+        <div class="editor-layout">
+          <section class="editor-panel">
+            <div class="toolbar" aria-label="Formatting toolbar">
+              <button data-command="bold" title="Bold"><strong>B</strong></button>
+              <button data-command="italic" title="Italic"><em>I</em></button>
+              <button data-command="underline" title="Underline"><span class="underline">U</span></button>
+              <button data-block="h1" title="Heading 1">H1</button>
+              <button data-block="h2" title="Heading 2">H2</button>
+              <button data-block="p" title="Paragraph">P</button>
+              <button data-command="insertUnorderedList" title="Bulleted list">UL</button>
+              <button data-command="insertOrderedList" title="Numbered list">OL</button>
+              <button id="saveDocument" class="save-button">Save</button>
+            </div>
+
+            <div id="editor" class="editor" contenteditable="true" aria-label="Document editor">
+              <h1>Ajaia Docs Lite</h1>
+              <p>Create or select a document to start editing.</p>
+            </div>
+          </section>
+
+          <aside class="share-panel">
+            <h2>Share</h2>
+            <p id="shareHelp">Owners can grant access to another seeded user.</p>
+            <label class="field">
+              <span>Grant access to</span>
+              <select id="shareUserSelect"></select>
+            </label>
+            <button id="shareDocument">Share document</button>
+
+            <h3>People with access</h3>
+            <div id="shareList" class="share-list"></div>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" hidden></div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
+
