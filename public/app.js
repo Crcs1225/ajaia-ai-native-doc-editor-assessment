@@ -4,6 +4,7 @@ const state = {
   currentDocumentId: localStorage.getItem("ajaia.currentDocumentId") || "",
   currentDocument: null,
   documents: { owned: [], shared: [] },
+  filter: "all",
   dirty: false
 };
 
@@ -12,22 +13,37 @@ const elements = {
   loginForm: document.querySelector("#loginForm"),
   emailInput: document.querySelector("#emailInput"),
   passwordInput: document.querySelector("#passwordInput"),
+  profileCards: document.querySelectorAll(".profile-card"),
+  appShell: document.querySelector("#appShell"),
+  dashboardView: document.querySelector("#dashboardView"),
+  dashboardTopbar: document.querySelector("#dashboardTopbar"),
+  editorView: document.querySelector("#editorView"),
+  dashboardTitle: document.querySelector("#dashboardTitle"),
+  documentGrid: document.querySelector("#documentGrid"),
+  emptyState: document.querySelector("#emptyState"),
+  emptyCreateDocument: document.querySelector("#emptyCreateDocument"),
+  searchInput: document.querySelector("#searchInput"),
   currentUserLabel: document.querySelector("#currentUserLabel"),
+  currentUserAvatar: document.querySelector("#currentUserAvatar"),
   logoutButton: document.querySelector("#logoutButton"),
+  navItems: document.querySelectorAll(".nav-item"),
   shareUserSelect: document.querySelector("#shareUserSelect"),
-  ownedDocuments: document.querySelector("#ownedDocuments"),
-  sharedDocuments: document.querySelector("#sharedDocuments"),
-  ownedCount: document.querySelector("#ownedCount"),
-  sharedCount: document.querySelector("#sharedCount"),
   createDocument: document.querySelector("#createDocument"),
   fileImport: document.querySelector("#fileImport"),
   titleInput: document.querySelector("#titleInput"),
   ownerLabel: document.querySelector("#ownerLabel"),
+  ownerAvatar: document.querySelector("#ownerAvatar"),
   saveStatus: document.querySelector("#saveStatus"),
   editor: document.querySelector("#editor"),
   saveDocument: document.querySelector("#saveDocument"),
+  topSaveButton: document.querySelector("#topSaveButton"),
   shareDocument: document.querySelector("#shareDocument"),
+  topShareButton: document.querySelector("#topShareButton"),
+  backToDashboard: document.querySelector("#backToDashboard"),
   shareList: document.querySelector("#shareList"),
+  lastSavedLabel: document.querySelector("#lastSavedLabel"),
+  createdLabel: document.querySelector("#createdLabel"),
+  docIdLabel: document.querySelector("#docIdLabel"),
   toast: document.querySelector("#toast")
 };
 
@@ -48,12 +64,37 @@ async function boot() {
 
 function bindEvents() {
   elements.loginForm.addEventListener("submit", login);
+  elements.profileCards.forEach((card) => {
+    card.addEventListener("click", () => {
+      elements.emailInput.value = card.dataset.email;
+      elements.passwordInput.value = "password123";
+      elements.loginForm.requestSubmit();
+    });
+  });
   elements.logoutButton.addEventListener("click", logout);
   elements.createDocument.addEventListener("click", createDocument);
+  elements.emptyCreateDocument.addEventListener("click", createDocument);
   elements.fileImport.addEventListener("change", importFile);
   elements.saveDocument.addEventListener("click", saveDocument);
+  elements.topSaveButton.addEventListener("click", saveDocument);
   elements.shareDocument.addEventListener("click", shareDocument);
+  elements.topShareButton.addEventListener("click", () => {
+    if (state.currentDocumentId) {
+      elements.shareUserSelect.focus();
+    } else {
+      showToast("Open a document before sharing.", true);
+    }
+  });
+  elements.backToDashboard.addEventListener("click", showDashboard);
   elements.titleInput.addEventListener("input", markDirty);
+  elements.searchInput.addEventListener("input", renderDocumentGrid);
+  elements.navItems.forEach((item) => {
+    item.addEventListener("click", () => {
+      state.filter = item.dataset.filter;
+      elements.navItems.forEach((navItem) => navItem.classList.toggle("active", navItem === item));
+      renderDocumentGrid();
+    });
+  });
   quill.on("text-change", markDirty);
 }
 
@@ -74,6 +115,7 @@ async function loadSession() {
     await openDocument(state.currentDocumentId);
   } else {
     renderEditorEmpty();
+    showDashboard();
   }
 }
 
@@ -95,6 +137,7 @@ async function login(event) {
     await loadUsers();
     await loadDocuments();
     renderEditorEmpty();
+    showDashboard();
   } catch (error) {
     showToast(error.message, true);
   }
@@ -111,11 +154,27 @@ async function logout() {
 
 function showLogin() {
   elements.loginView.hidden = false;
+  elements.appShell.hidden = true;
 }
 
 function showApp() {
   elements.loginView.hidden = true;
+  elements.appShell.hidden = false;
   elements.currentUserLabel.textContent = `${state.currentUser.name} (${state.currentUser.email})`;
+  elements.currentUserAvatar.textContent = initials(state.currentUser.name);
+}
+
+function showDashboard() {
+  elements.dashboardTopbar.hidden = false;
+  elements.dashboardView.hidden = false;
+  elements.editorView.hidden = true;
+  renderDocumentGrid();
+}
+
+function showEditor() {
+  elements.dashboardTopbar.hidden = true;
+  elements.dashboardView.hidden = true;
+  elements.editorView.hidden = false;
 }
 
 async function loadUsers() {
@@ -126,33 +185,69 @@ async function loadUsers() {
 
 async function loadDocuments() {
   state.documents = await api("/api/documents");
-  renderDocumentLists();
+  renderDocumentGrid();
 }
 
-function renderDocumentLists() {
-  elements.ownedCount.textContent = state.documents.owned.length;
-  elements.sharedCount.textContent = state.documents.shared.length;
-  elements.ownedDocuments.innerHTML = renderDocumentCards(state.documents.owned, "Owner");
-  elements.sharedDocuments.innerHTML = renderDocumentCards(state.documents.shared, "Shared");
+function renderDocumentGrid() {
+  const query = elements.searchInput.value.trim().toLowerCase();
+  const titleByFilter = {
+    all: "All Documents",
+    owned: "Owned by Me",
+    shared: "Shared with Me"
+  };
+  elements.dashboardTitle.textContent = titleByFilter[state.filter] || "All Documents";
+
+  const allDocuments = [
+    ...state.documents.owned.map((document) => ({ ...document, bucket: "owned" })),
+    ...state.documents.shared.map((document) => ({ ...document, bucket: "shared" }))
+  ];
+
+  const visible = allDocuments.filter((document) => {
+    const matchesFilter = state.filter === "all" || document.bucket === state.filter;
+    const matchesQuery = !query || document.title.toLowerCase().includes(query) || document.ownerName.toLowerCase().includes(query);
+    return matchesFilter && matchesQuery;
+  });
+
+  elements.documentGrid.hidden = visible.length === 0;
+  elements.emptyState.hidden = visible.length > 0;
+  elements.documentGrid.innerHTML = visible.map(renderDocumentCard).join("");
 
   document.querySelectorAll("[data-document-id]").forEach((button) => {
     button.addEventListener("click", () => openDocument(button.dataset.documentId));
   });
 }
 
-function renderDocumentCards(documents, label) {
-  if (documents.length === 0) {
-    return `<div class="empty">No ${label.toLowerCase()} documents.</div>`;
-  }
+function renderDocumentCard(document) {
+  const isShared = document.bucket === "shared";
+  const editedLabel = document.updatedAt ? `Last edited ${relativeDate(document.updatedAt)}` : "Not edited yet";
+  const ownerInitials = initials(document.ownerName);
+  const icon = isShared ? "◎" : document.shareCount > 0 ? "✦" : "□";
 
-  return documents
-    .map((document) => `
-      <button class="document-card ${document.id === state.currentDocumentId ? "active" : ""}" data-document-id="${document.id}">
-        <strong>${escapeHtml(document.title)}</strong>
-        <span>${label} - ${escapeHtml(document.ownerName)} - ${formatDate(document.updatedAt)}</span>
-      </button>
-    `)
-    .join("");
+  return `
+    <button class="document-card ${isShared ? "shared" : ""}" type="button" data-document-id="${document.id}">
+      <div class="doc-preview">
+        <span>${icon}</span>
+        <span class="doc-actions" aria-hidden="true">
+          <span>✎</span>
+          <span>↗</span>
+        </span>
+      </div>
+      <div class="doc-body">
+        <div class="doc-title-row">
+          <strong>${escapeHtml(document.title)}</strong>
+          ${isShared ? `<span class="badge">Shared</span>` : document.shareCount > 0 ? `<span class="badge">Team</span>` : ""}
+        </div>
+        <p class="doc-meta">${escapeHtml(editedLabel)}</p>
+        <div class="doc-footer">
+          <span class="doc-owner">
+            <span class="avatar mini">${escapeHtml(ownerInitials)}</span>
+            ${escapeHtml(document.ownerName)}
+          </span>
+          ${isShared || document.shareCount > 0 ? `<span aria-label="Shared document">◎</span>` : ""}
+        </div>
+      </div>
+    </button>
+  `;
 }
 
 async function openDocument(documentId) {
@@ -164,14 +259,20 @@ async function openDocument(documentId) {
 
     elements.titleInput.value = data.document.title;
     quill.root.innerHTML = data.document.content;
-    elements.ownerLabel.textContent = `Owner: ${data.document.ownerName}`;
+    elements.ownerLabel.textContent = data.document.ownerName;
+    elements.ownerAvatar.textContent = initials(data.document.ownerName);
+    elements.lastSavedLabel.textContent = data.document.updatedAt ? relativeDate(data.document.updatedAt) : "Not saved";
+    elements.createdLabel.textContent = data.document.createdAt ? shortDate(data.document.createdAt) : "-";
+    elements.docIdLabel.textContent = data.document.id.slice(0, 12);
     state.dirty = false;
     setStatus("Saved");
     renderSharePanel();
-    renderDocumentLists();
+    renderDocumentGrid();
+    showEditor();
   } catch (error) {
     showToast(error.message, true);
     renderEditorEmpty();
+    showDashboard();
   }
 }
 
@@ -234,6 +335,7 @@ async function saveDocument() {
     ...state.currentDocument,
     ...data.document
   };
+  elements.lastSavedLabel.textContent = relativeDate(data.document.updatedAt);
   state.dirty = false;
   setStatus("Saved");
   await loadDocuments();
@@ -243,7 +345,7 @@ async function saveDocument() {
 
 async function shareDocument() {
   if (!state.currentDocument) {
-    showToast("Select a document before sharing.", true);
+    showToast("Open a document before sharing.", true);
     return;
   }
 
@@ -266,6 +368,7 @@ async function shareDocument() {
   });
 
   await openDocument(state.currentDocument.id);
+  await loadDocuments();
   showToast("Document shared.");
 }
 
@@ -274,12 +377,14 @@ function renderSharePanel() {
 
   if (!state.currentDocument) {
     elements.shareDocument.disabled = true;
+    elements.topShareButton.disabled = true;
     elements.shareList.innerHTML = `<div class="empty">No document selected.</div>`;
     return;
   }
 
   const isOwner = state.currentDocument.ownerId === state.currentUser.id;
   elements.shareDocument.disabled = !isOwner;
+  elements.topShareButton.disabled = !isOwner;
   elements.shareUserSelect.disabled = !isOwner;
 
   const sharedUsers = state.currentDocument.shares ?? [];
@@ -308,17 +413,22 @@ function renderShareUserOptions() {
 
   elements.shareUserSelect.innerHTML = options || `<option value="">No available users</option>`;
   elements.shareDocument.disabled = !options;
+  elements.topShareButton.disabled = !options;
 }
 
 function renderEditorEmpty() {
   state.currentDocument = null;
   state.currentDocumentId = "";
   elements.titleInput.value = "Select or create a document";
-  quill.root.innerHTML = "<h1>Ajaia Docs Lite</h1><p>Create or select a document to start editing.</p>";
+  quill.root.innerHTML = "<h1>Ajaia Docs</h1><p>Create or select a document to start editing.</p>";
   elements.ownerLabel.textContent = "No document selected";
+  elements.ownerAvatar.textContent = "--";
+  elements.lastSavedLabel.textContent = "Not saved";
+  elements.createdLabel.textContent = "-";
+  elements.docIdLabel.textContent = "-";
   setStatus("Idle");
   renderSharePanel();
-  renderDocumentLists();
+  renderDocumentGrid();
 }
 
 function markDirty() {
@@ -366,12 +476,31 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function formatDate(value) {
+function initials(name) {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return (parts[0]?.[0] || "-") + (parts[1]?.[0] || "");
+}
+
+function shortDate(value) {
   return new Intl.DateTimeFormat(undefined, {
     month: "short",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
+    year: "numeric"
   }).format(new Date(value));
 }
 
+function relativeDate(value) {
+  const date = new Date(value);
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.max(0, Math.round(diffMs / 60000));
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return shortDate(value);
+}

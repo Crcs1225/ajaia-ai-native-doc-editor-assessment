@@ -1,123 +1,247 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="light">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ajaia Docs Lite</title>
+    <title>Ajaia Docs</title>
     <link rel="stylesheet" href="/vendor/quill.snow.css">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
     <section id="loginView" class="login-view">
-      <form id="loginForm" class="login-card">
-        <div class="brand login-brand">
-          <div class="brand-mark">A</div>
-          <div>
-            <h1>Ajaia Docs Lite</h1>
-            <p>Sign in to manage shared documents</p>
-          </div>
+      <div class="ambient ambient-one"></div>
+      <div class="ambient ambient-two"></div>
+      <main class="login-shell">
+        <div class="login-hero">
+          <div class="app-icon">A</div>
+          <h1>Ajaia Docs</h1>
+          <p>Create, edit, upload, and share lightweight documents.</p>
         </div>
-        <label class="field">
-          <span>Email</span>
-          <input id="emailInput" type="email" autocomplete="email" value="alex@ajaia.test">
-        </label>
-        <label class="field">
-          <span>Password</span>
-          <input id="passwordInput" type="password" autocomplete="current-password" value="password123">
-        </label>
-        <button class="primary" type="submit">Sign in</button>
-        <p class="hint">Demo users use password <strong>password123</strong>: alex@ajaia.test, blair@ajaia.test, casey@ajaia.test.</p>
-      </form>
+
+        <form id="loginForm" class="login-card">
+          <div class="login-copy">
+            <h2>Select a user to continue</h2>
+            <p>Seeded accounts use the password <strong>password123</strong>.</p>
+          </div>
+
+          <div class="profile-list" aria-label="Demo accounts">
+            <button class="profile-card" type="button" data-email="alex@ajaia.test">
+              <span class="avatar primary-avatar">MD</span>
+              <span>
+                <strong>Marc Daniel</strong>
+                <small>Owner</small>
+              </span>
+              <span class="chevron">›</span>
+            </button>
+            <button class="profile-card" type="button" data-email="blair@ajaia.test">
+              <span class="avatar">AR</span>
+              <span>
+                <strong>Ajaia Reviewer</strong>
+                <small>Editor</small>
+              </span>
+              <span class="chevron">›</span>
+            </button>
+            <button class="profile-card" type="button" data-email="casey@ajaia.test">
+              <span class="avatar secondary-avatar">TM</span>
+              <span>
+                <strong>Team Member</strong>
+                <small>Viewer</small>
+              </span>
+              <span class="chevron">›</span>
+            </button>
+          </div>
+
+          <div class="credential-grid">
+            <label class="field">
+              <span>Email</span>
+              <input id="emailInput" type="email" autocomplete="email" value="alex@ajaia.test">
+            </label>
+            <label class="field">
+              <span>Password</span>
+              <input id="passwordInput" type="password" autocomplete="current-password" value="password123">
+            </label>
+          </div>
+
+          <button class="primary full-width" type="submit">Sign in</button>
+        </form>
+      </main>
     </section>
 
-    <div class="app-shell">
+    <div id="appShell" class="app-shell">
       <aside class="sidebar">
         <div class="brand">
           <div class="brand-mark">A</div>
           <div>
-            <h1>Ajaia Docs Lite</h1>
-            <p>Focused collaborative editing</p>
+            <h1>Ajaia Docs</h1>
+            <p>Collaborative Editor</p>
           </div>
         </div>
 
-        <div class="account-box">
-          <span>Signed in as</span>
-          <strong id="currentUserLabel">Loading...</strong>
-          <button id="logoutButton">Sign out</button>
+        <nav class="side-nav" aria-label="Documents">
+          <button class="nav-item active" type="button" data-filter="all">
+            <span class="icon">▣</span>
+            <span>All Documents</span>
+          </button>
+          <button class="nav-item" type="button" data-filter="owned">
+            <span class="icon">◉</span>
+            <span>Owned by Me</span>
+          </button>
+          <button class="nav-item" type="button" data-filter="shared">
+            <span class="icon">◎</span>
+            <span>Shared with Me</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <button id="createDocument" class="primary nav-create" type="button">
+            <span>+</span>
+            New Document
+          </button>
         </div>
-
-        <div class="actions">
-          <button id="createDocument" class="primary">New document</button>
-          <label class="upload-button">
-            Import .txt/.md
-            <input id="fileImport" type="file" accept=".txt,.md">
-          </label>
-        </div>
-
-        <p class="hint">Uploads support .txt and .md files. Seeded users simulate login so sharing can be reviewed quickly.</p>
-
-        <section>
-          <div class="section-heading">
-            <h2>Owned</h2>
-            <span id="ownedCount">0</span>
-          </div>
-          <div id="ownedDocuments" class="document-list"></div>
-        </section>
-
-        <section>
-          <div class="section-heading">
-            <h2>Shared with me</h2>
-            <span id="sharedCount">0</span>
-          </div>
-          <div id="sharedDocuments" class="document-list"></div>
-        </section>
       </aside>
 
-      <main class="workspace">
-        <header class="topbar">
-          <input id="titleInput" class="title-input" aria-label="Document title" value="Select or create a document">
-          <div class="status-row">
-            <span id="ownerLabel">No document selected</span>
-            <span id="saveStatus">Idle</span>
+      <div class="main-shell">
+        <header id="dashboardTopbar" class="dashboard-topbar">
+          <div class="top-tabs">
+            <button class="top-tab active" type="button">Documents</button>
+            <button class="top-tab" type="button">Workspace</button>
+          </div>
+          <div class="search-shell">
+            <span>⌕</span>
+            <input id="searchInput" type="search" placeholder="Search documents...">
+          </div>
+          <div class="top-actions">
+            <button id="topSaveButton" type="button">Save</button>
+            <button id="topShareButton" class="primary pill" type="button">Share</button>
+            <span class="top-divider"></span>
+            <button class="icon-button" type="button" aria-label="Notifications">!</button>
+            <button class="icon-button" type="button" aria-label="Settings">⚙</button>
+            <div class="account-chip">
+              <span id="currentUserAvatar" class="avatar mini">MD</span>
+              <span id="currentUserLabel">Loading...</span>
+              <button id="logoutButton" type="button">Sign out</button>
+            </div>
           </div>
         </header>
 
-        <div class="editor-layout">
-          <section class="editor-panel">
-            <div id="toolbar" class="toolbar" aria-label="Formatting toolbar">
-              <button class="ql-bold" title="Bold"></button>
-              <button class="ql-italic" title="Italic"></button>
-              <button class="ql-underline" title="Underline"></button>
-              <select class="ql-header" title="Heading">
-                <option value="1">Heading 1</option>
-                <option value="2">Heading 2</option>
-                <option selected>Paragraph</option>
-              </select>
-              <button class="ql-list" value="bullet" title="Bulleted list"></button>
-              <button class="ql-list" value="ordered" title="Numbered list"></button>
-              <button id="saveDocument" class="save-button">Save</button>
+        <main id="dashboardView" class="dashboard-view">
+          <section class="dashboard-heading">
+            <div>
+              <h2 id="dashboardTitle">All Documents</h2>
+              <p>Manage and access all your workspace files.</p>
             </div>
-
-            <div id="editor" class="editor" aria-label="Document editor">
-              <h1>Ajaia Docs Lite</h1>
-              <p>Create or select a document to start editing.</p>
+            <div class="dashboard-actions">
+              <button id="filterButton" type="button">
+                <span>≡</span>
+                Filter
+              </button>
+              <label class="upload-button">
+                <span>⇧</span>
+                Upload File
+                <input id="fileImport" type="file" accept=".txt,.md">
+              </label>
             </div>
           </section>
 
-          <aside class="share-panel">
-            <h2>Share</h2>
-            <p id="shareHelp">Owners can grant access to another seeded user.</p>
-            <label class="field">
-              <span>Grant access to</span>
-              <select id="shareUserSelect"></select>
-            </label>
-            <button id="shareDocument">Share document</button>
+          <section id="documentGrid" class="document-grid" aria-label="Documents"></section>
+          <section id="emptyState" class="empty-state" hidden>
+            <div class="empty-icon">□</div>
+            <h3>No documents yet</h3>
+            <p>Create a new document to start collaborating with your team.</p>
+            <button class="primary" type="button" id="emptyCreateDocument">Create Document</button>
+          </section>
+        </main>
 
-            <h3>People with access</h3>
-            <div id="shareList" class="share-list"></div>
-          </aside>
-        </div>
-      </main>
+        <main id="editorView" class="editor-view" hidden>
+          <header class="editor-topbar">
+            <div class="editor-title-row">
+              <button id="backToDashboard" class="icon-button" type="button" aria-label="Back to Dashboard">‹</button>
+              <span class="vertical-divider"></span>
+              <input id="titleInput" class="title-input" aria-label="Document title" value="Select or create a document">
+            </div>
+            <div class="editor-actions">
+              <div class="save-indicator">
+                <span>✓</span>
+                <span id="saveStatus">Idle</span>
+              </div>
+              <button id="saveDocument" class="secondary-button" type="button">Save</button>
+              <button id="shareDocument" class="primary" type="button">Share document</button>
+            </div>
+          </header>
+
+          <div class="editor-workspace">
+            <section class="document-column">
+              <div id="toolbar" class="toolbar" aria-label="Formatting toolbar">
+                <span class="toolbar-group">
+                  <button class="ql-bold" title="Bold"></button>
+                  <button class="ql-italic" title="Italic"></button>
+                  <button class="ql-underline" title="Underline"></button>
+                </span>
+                <span class="toolbar-group">
+                  <select class="ql-header" title="Heading">
+                    <option value="1">Heading 1</option>
+                    <option value="2">Heading 2</option>
+                    <option selected>Paragraph</option>
+                  </select>
+                </span>
+                <span class="toolbar-group">
+                  <button class="ql-list" value="bullet" title="Bulleted list"></button>
+                  <button class="ql-list" value="ordered" title="Numbered list"></button>
+                </span>
+              </div>
+
+              <div class="page-scroll">
+                <div class="page-frame">
+                  <div id="editor" class="editor" aria-label="Document editor">
+                    <h1>Ajaia Docs</h1>
+                    <p>Create or select a document to start editing.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <aside class="details-panel">
+              <h2>
+                <span>i</span>
+                Document Details
+              </h2>
+              <div class="detail-block">
+                <span class="detail-label">Owner</span>
+                <div class="person-row">
+                  <span id="ownerAvatar" class="avatar mini">MD</span>
+                  <span id="ownerLabel">No document selected</span>
+                </div>
+              </div>
+              <div class="detail-block">
+                <span class="detail-label">Shared With</span>
+                <label class="field compact">
+                  <span>Grant access to</span>
+                  <select id="shareUserSelect"></select>
+                </label>
+                <div id="shareList" class="share-list"></div>
+              </div>
+              <div class="detail-block">
+                <span class="detail-label">Attachments</span>
+                <p class="muted-line">None attached</p>
+              </div>
+              <div class="system-card">
+                <div>
+                  <span>Last saved</span>
+                  <strong id="lastSavedLabel">Not saved</strong>
+                </div>
+                <div>
+                  <span>Created</span>
+                  <strong id="createdLabel">-</strong>
+                </div>
+                <div>
+                  <span>Doc ID</span>
+                  <strong id="docIdLabel">-</strong>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
     </div>
 
     <div id="toast" class="toast" hidden></div>

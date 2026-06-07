@@ -66,18 +66,20 @@ async function runFlow() {
     await page.getByLabel("Password").fill("password123");
     await page.getByRole("button", { name: "Sign in" }).click();
 
-    await expect(page.getByText("Signed in as")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "All Documents" })).toBeVisible();
+    await expect(page.getByText("Alex Owner (alex@ajaia.test)")).toBeVisible();
     await page.getByRole("button", { name: "New document" }).click();
     await expect(page.getByLabel("Document title")).toHaveValue("Untitled document");
     await page.getByLabel("Document title").fill(title);
     await page.locator(".ql-editor").fill("Product launch checklist");
-    await page.getByRole("button", { name: "Save" }).click();
+    await page.locator("#saveDocument").click();
     await expect(page.getByText("Document saved.")).toBeVisible();
 
     await page.getByLabel("Grant access to").selectOption("user_blair");
     await page.getByRole("button", { name: "Share document" }).click();
     await expect(page.getByText("Blair Reviewer")).toBeVisible();
 
+    await page.getByLabel("Back to Dashboard").click();
     await page.getByRole("button", { name: "Sign out" }).click();
     await page.getByLabel("Email").fill("blair@ajaia.test");
     await page.getByLabel("Password").fill("password123");
@@ -89,4 +91,3 @@ async function runFlow() {
     await browser.close();
   }
 }
-
