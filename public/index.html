@@ -31,7 +31,7 @@
                 <strong>Marc Daniel</strong>
                 <small>Owner</small>
               </span>
-              <span class="chevron">›</span>
+              <span class="chevron">&gt;</span>
             </button>
             <button class="profile-card" type="button" data-email="blair@ajaia.test">
               <span class="avatar">AR</span>
@@ -39,7 +39,7 @@
                 <strong>Ajaia Reviewer</strong>
                 <small>Editor</small>
               </span>
-              <span class="chevron">›</span>
+              <span class="chevron">&gt;</span>
             </button>
             <button class="profile-card" type="button" data-email="casey@ajaia.test">
               <span class="avatar secondary-avatar">TM</span>
@@ -47,7 +47,7 @@
                 <strong>Team Member</strong>
                 <small>Viewer</small>
               </span>
-              <span class="chevron">›</span>
+              <span class="chevron">&gt;</span>
             </button>
           </div>
 
@@ -79,15 +79,15 @@
 
         <nav class="side-nav" aria-label="Documents">
           <button class="nav-item active" type="button" data-filter="all">
-            <span class="icon">▣</span>
+            <span class="icon">D</span>
             <span>All Documents</span>
           </button>
           <button class="nav-item" type="button" data-filter="owned">
-            <span class="icon">◉</span>
+            <span class="icon">O</span>
             <span>Owned by Me</span>
           </button>
           <button class="nav-item" type="button" data-filter="shared">
-            <span class="icon">◎</span>
+            <span class="icon">S</span>
             <span>Shared with Me</span>
           </button>
         </nav>
@@ -102,25 +102,18 @@
 
       <div class="main-shell">
         <header id="dashboardTopbar" class="dashboard-topbar">
-          <div class="top-tabs">
-            <button class="top-tab active" type="button">Documents</button>
-            <button class="top-tab" type="button">Workspace</button>
+          <div class="top-title">
+            <strong>Documents</strong>
+            <span id="dashboardCountLabel">0 documents</span>
           </div>
           <div class="search-shell">
-            <span>⌕</span>
+            <span>Search</span>
             <input id="searchInput" type="search" placeholder="Search documents...">
           </div>
-          <div class="top-actions">
-            <button id="topSaveButton" type="button">Save</button>
-            <button id="topShareButton" class="primary pill" type="button">Share</button>
-            <span class="top-divider"></span>
-            <button class="icon-button" type="button" aria-label="Notifications">!</button>
-            <button class="icon-button" type="button" aria-label="Settings">⚙</button>
-            <div class="account-chip">
-              <span id="currentUserAvatar" class="avatar mini">MD</span>
-              <span id="currentUserLabel">Loading...</span>
-              <button id="logoutButton" type="button">Sign out</button>
-            </div>
+          <div class="account-chip">
+            <span id="currentUserAvatar" class="avatar mini">MD</span>
+            <span id="currentUserLabel">Loading...</span>
+            <button id="logoutButton" type="button">Sign out</button>
           </div>
         </header>
 
@@ -128,15 +121,15 @@
           <section class="dashboard-heading">
             <div>
               <h2 id="dashboardTitle">All Documents</h2>
-              <p>Manage and access all your workspace files.</p>
+              <p>Manage and access your workspace files.</p>
             </div>
             <div class="dashboard-actions">
-              <button id="filterButton" type="button">
-                <span>≡</span>
-                Filter
-              </button>
+              <div class="filter-tabs" aria-label="Filter documents">
+                <button class="filter-tab active" type="button" data-filter="all">All</button>
+                <button class="filter-tab" type="button" data-filter="owned">Owned</button>
+                <button class="filter-tab" type="button" data-filter="shared">Shared</button>
+              </div>
               <label class="upload-button">
-                <span>⇧</span>
                 Upload File
                 <input id="fileImport" type="file" accept=".txt,.md">
               </label>
@@ -145,7 +138,7 @@
 
           <section id="documentGrid" class="document-grid" aria-label="Documents"></section>
           <section id="emptyState" class="empty-state" hidden>
-            <div class="empty-icon">□</div>
+            <div class="empty-icon">D</div>
             <h3>No documents yet</h3>
             <p>Create a new document to start collaborating with your team.</p>
             <button class="primary" type="button" id="emptyCreateDocument">Create Document</button>
@@ -155,13 +148,12 @@
         <main id="editorView" class="editor-view" hidden>
           <header class="editor-topbar">
             <div class="editor-title-row">
-              <button id="backToDashboard" class="icon-button" type="button" aria-label="Back to Dashboard">‹</button>
+              <button id="backToDashboard" class="icon-button" type="button" aria-label="Back to Dashboard">&lt;</button>
               <span class="vertical-divider"></span>
               <input id="titleInput" class="title-input" aria-label="Document title" value="Select or create a document">
             </div>
             <div class="editor-actions">
               <div class="save-indicator">
-                <span>✓</span>
                 <span id="saveStatus">Idle</span>
               </div>
               <button id="saveDocument" class="secondary-button" type="button">Save</button>
@@ -176,15 +168,11 @@
                   <button class="ql-bold" title="Bold"></button>
                   <button class="ql-italic" title="Italic"></button>
                   <button class="ql-underline" title="Underline"></button>
-                </span>
-                <span class="toolbar-group">
                   <select class="ql-header" title="Heading">
                     <option value="1">Heading 1</option>
                     <option value="2">Heading 2</option>
                     <option selected>Paragraph</option>
                   </select>
-                </span>
-                <span class="toolbar-group">
                   <button class="ql-list" value="bullet" title="Bulleted list"></button>
                   <button class="ql-list" value="ordered" title="Numbered list"></button>
                 </span>
@@ -201,10 +189,7 @@
             </section>
 
             <aside class="details-panel">
-              <h2>
-                <span>i</span>
-                Document Details
-              </h2>
+              <h2>Document Details</h2>
               <div class="detail-block">
                 <span class="detail-label">Owner</span>
                 <div class="person-row">
@@ -219,10 +204,6 @@
                   <select id="shareUserSelect"></select>
                 </label>
                 <div id="shareList" class="share-list"></div>
-              </div>
-              <div class="detail-block">
-                <span class="detail-label">Attachments</span>
-                <p class="muted-line">None attached</p>
               </div>
               <div class="system-card">
                 <div>

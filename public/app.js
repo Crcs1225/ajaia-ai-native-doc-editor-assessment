@@ -19,6 +19,7 @@ const elements = {
   dashboardTopbar: document.querySelector("#dashboardTopbar"),
   editorView: document.querySelector("#editorView"),
   dashboardTitle: document.querySelector("#dashboardTitle"),
+  dashboardCountLabel: document.querySelector("#dashboardCountLabel"),
   documentGrid: document.querySelector("#documentGrid"),
   emptyState: document.querySelector("#emptyState"),
   emptyCreateDocument: document.querySelector("#emptyCreateDocument"),
@@ -27,6 +28,7 @@ const elements = {
   currentUserAvatar: document.querySelector("#currentUserAvatar"),
   logoutButton: document.querySelector("#logoutButton"),
   navItems: document.querySelectorAll(".nav-item"),
+  filterTabs: document.querySelectorAll(".filter-tab"),
   shareUserSelect: document.querySelector("#shareUserSelect"),
   createDocument: document.querySelector("#createDocument"),
   fileImport: document.querySelector("#fileImport"),
@@ -36,9 +38,7 @@ const elements = {
   saveStatus: document.querySelector("#saveStatus"),
   editor: document.querySelector("#editor"),
   saveDocument: document.querySelector("#saveDocument"),
-  topSaveButton: document.querySelector("#topSaveButton"),
   shareDocument: document.querySelector("#shareDocument"),
-  topShareButton: document.querySelector("#topShareButton"),
   backToDashboard: document.querySelector("#backToDashboard"),
   shareList: document.querySelector("#shareList"),
   lastSavedLabel: document.querySelector("#lastSavedLabel"),
@@ -97,24 +97,15 @@ function bindEvents() {
   elements.emptyCreateDocument.addEventListener("click", createDocument);
   elements.fileImport.addEventListener("change", importFile);
   elements.saveDocument.addEventListener("click", saveDocument);
-  elements.topSaveButton.addEventListener("click", saveDocument);
   elements.shareDocument.addEventListener("click", shareDocument);
-  elements.topShareButton.addEventListener("click", () => {
-    if (state.currentDocumentId) {
-      elements.shareUserSelect.focus();
-    } else {
-      showToast("Open a document before sharing.", true);
-    }
-  });
   elements.backToDashboard.addEventListener("click", showDashboard);
   elements.titleInput.addEventListener("input", markDirty);
   elements.searchInput.addEventListener("input", renderDocumentGrid);
   elements.navItems.forEach((item) => {
-    item.addEventListener("click", () => {
-      state.filter = item.dataset.filter;
-      elements.navItems.forEach((navItem) => navItem.classList.toggle("active", navItem === item));
-      renderDocumentGrid();
-    });
+    item.addEventListener("click", () => setDocumentFilter(item.dataset.filter));
+  });
+  elements.filterTabs.forEach((tab) => {
+    tab.addEventListener("click", () => setDocumentFilter(tab.dataset.filter));
   });
   quill.on("text-change", markDirty);
 }
@@ -219,6 +210,7 @@ function renderDocumentGrid() {
     shared: "Shared with Me"
   };
   elements.dashboardTitle.textContent = titleByFilter[state.filter] || "All Documents";
+  syncFilterControls();
 
   const allDocuments = [
     ...state.documents.owned.map((document) => ({ ...document, bucket: "owned" })),
@@ -233,6 +225,7 @@ function renderDocumentGrid() {
 
   elements.documentGrid.hidden = visible.length === 0;
   elements.emptyState.hidden = visible.length > 0;
+  elements.dashboardCountLabel.textContent = `${visible.length} of ${allDocuments.length} document${allDocuments.length === 1 ? "" : "s"}`;
   elements.documentGrid.innerHTML = visible.map(renderDocumentCard).join("");
 
   document.querySelectorAll("[data-document-id]").forEach((button) => {
@@ -244,16 +237,12 @@ function renderDocumentCard(document) {
   const isShared = document.bucket === "shared";
   const editedLabel = document.updatedAt ? `Last edited ${relativeDate(document.updatedAt)}` : "Not edited yet";
   const ownerInitials = initials(document.ownerName);
-  const icon = isShared ? "◎" : document.shareCount > 0 ? "✦" : "□";
+  const icon = isShared ? "S" : document.shareCount > 0 ? "T" : "D";
 
   return `
     <button class="document-card ${isShared ? "shared" : ""}" type="button" data-document-id="${document.id}">
       <div class="doc-preview">
         <span>${icon}</span>
-        <span class="doc-actions" aria-hidden="true">
-          <span>✎</span>
-          <span>↗</span>
-        </span>
       </div>
       <div class="doc-body">
         <div class="doc-title-row">
@@ -266,13 +255,28 @@ function renderDocumentCard(document) {
             <span class="avatar mini">${escapeHtml(ownerInitials)}</span>
             ${escapeHtml(document.ownerName)}
           </span>
-          ${isShared || document.shareCount > 0 ? `<span aria-label="Shared document">◎</span>` : ""}
+          ${isShared || document.shareCount > 0 ? `<span class="shared-marker">Shared</span>` : ""}
         </div>
       </div>
     </button>
   `;
 }
 
+function setDocumentFilter(filter) {
+  state.filter = ["all", "owned", "shared"].includes(filter) ? filter : "all";
+  renderDocumentGrid();
+}
+
+function syncFilterControls() {
+  elements.navItems.forEach((item) => {
+    item.classList.toggle("active", item.dataset.filter === state.filter);
+  });
+  elements.filterTabs.forEach((tab) => {
+    const isActive = tab.dataset.filter === state.filter;
+    tab.classList.toggle("active", isActive);
+    tab.setAttribute("aria-pressed", String(isActive));
+  });
+}
 async function openDocument(documentId) {
   try {
     const data = await api(`/api/documents/${encodeURIComponent(documentId)}`);
@@ -400,14 +404,12 @@ function renderSharePanel() {
 
   if (!state.currentDocument) {
     elements.shareDocument.disabled = true;
-    elements.topShareButton.disabled = true;
     elements.shareList.innerHTML = `<div class="empty">No document selected.</div>`;
     return;
   }
 
   const isOwner = state.currentDocument.ownerId === state.currentUser.id;
   elements.shareDocument.disabled = !isOwner;
-  elements.topShareButton.disabled = !isOwner;
   elements.shareUserSelect.disabled = !isOwner;
 
   const sharedUsers = state.currentDocument.shares ?? [];
@@ -436,7 +438,6 @@ function renderShareUserOptions() {
 
   elements.shareUserSelect.innerHTML = options || `<option value="">No available users</option>`;
   elements.shareDocument.disabled = !options;
-  elements.topShareButton.disabled = !options;
 }
 
 function renderEditorEmpty() {

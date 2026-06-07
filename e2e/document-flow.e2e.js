@@ -75,6 +75,26 @@ async function runFlow() {
     await page.locator("#saveDocument").click();
     await expect(page.getByText("Document saved.")).toBeVisible();
 
+    await page.getByLabel("Back to Dashboard").click();
+    await expect(page.getByRole("heading", { name: "All Documents" })).toBeVisible();
+    await expect(page.getByRole("button", { name: new RegExp(title) })).toBeVisible();
+
+    await page.locator('.filter-tab[data-filter="owned"]').click();
+    await expect(page.getByRole("heading", { name: "Owned by Me" })).toBeVisible();
+    await expect(page.getByRole("button", { name: new RegExp(title) })).toBeVisible();
+
+    await page.locator('.filter-tab[data-filter="shared"]').click();
+    await expect(page.getByRole("heading", { name: "Shared with Me" })).toBeVisible();
+    await expect(page.getByRole("button", { name: new RegExp(title) })).toBeHidden();
+
+    await page.locator('.filter-tab[data-filter="all"]').click();
+    await page.getByPlaceholder("Search documents...").fill(title);
+    await expect(page.getByRole("button", { name: new RegExp(title) })).toBeVisible();
+    await page.getByPlaceholder("Search documents...").fill("not a real document title");
+    await expect(page.getByText("No documents yet")).toBeVisible();
+    await page.getByPlaceholder("Search documents...").fill("");
+
+    await page.getByRole("button", { name: new RegExp(title) }).click();
     await page.getByLabel("Grant access to").selectOption("user_blair");
     await page.getByRole("button", { name: "Share document" }).click();
     await expect(page.getByText("Blair Reviewer")).toBeVisible();
