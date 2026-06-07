@@ -11,23 +11,25 @@ Lightweight collaborative document editor built for the AI-Native Full Stack Dev
 ## What Works
 
 - Create, rename, edit, save, and reopen documents.
-- Rich-text editing in the browser with bold, italic, underline, headings, bullet lists, and numbered lists.
+- Rich-text editing with Quill: bold, italic, underline, headings, bullet lists, and numbered lists.
 - File import for `.txt` and `.md` files.
 - Simple sharing model with owner and shared users.
 - Visible distinction between owned documents and shared documents.
-- Persistence for documents and share records through a local JSON data store.
-- Seeded users that simulate authentication for review.
-- Automated tests for sharing and file validation.
+- Postgres persistence through `DATABASE_URL`, with local JSON fallback for quick review.
+- Email/password login with signed HTTP-only session cookies.
+- Server-side HTML sanitization before document content is stored.
+- Automated unit tests plus Playwright E2E coverage.
 
 ## Tech Stack
 
-- Node.js HTTP server, no external runtime dependencies.
+- Node.js HTTP server.
 - Browser HTML/CSS/JavaScript frontend.
-- `contenteditable` editor with native browser formatting commands.
-- JSON file persistence at `data/db.json`.
+- Quill rich-text editor served from installed npm assets.
+- `pg` Postgres adapter for production deployment.
+- JSON file persistence at `data/db.json` when `DATABASE_URL` is not set.
+- `sanitize-html` for server-side document sanitization.
 - Node built-in test runner.
-
-I intentionally avoided a dependency-heavy setup so reviewers can run the project quickly without paid services or package registry issues.
+- Playwright E2E runner.
 
 ## Local Setup
 
@@ -58,6 +60,7 @@ cmd /c npm run dev
 
 ```bash
 npm test
+npm run test:e2e
 ```
 
 PowerShell fallback:
@@ -68,7 +71,11 @@ cmd /c npm test
 
 ## Seeded Review Users
 
-Use the in-app user switcher to simulate login:
+Use the login form with password:
+
+```text
+password123
+```
 
 | Name | Email |
 | --- | --- |
@@ -84,7 +91,7 @@ Use the in-app user switcher to simulate login:
 4. Save, refresh, and reopen the document.
 5. Import a `.txt` or `.md` file.
 6. Share a document with `Blair Reviewer`.
-7. Switch to `Blair Reviewer`.
+7. Sign out and sign in as `Blair Reviewer`.
 8. Confirm the document appears under `Shared with me`.
 
 ## File Upload Support
@@ -98,17 +105,24 @@ Unsupported file types show a validation error. `.docx` import is intentionally 
 
 ## Persistence Notes
 
-The app persists to:
+For production or hosted demos, set:
+
+```text
+DATABASE_URL=postgres://...
+SESSION_SECRET=replace-with-a-long-random-secret
+```
+
+When `DATABASE_URL` is not set, the app falls back to:
 
 ```text
 data/db.json
 ```
 
-For a production deployment, I would replace the JSON file with Postgres or SQLite on a persistent disk. For this assignment, the JSON store keeps the app simple and easy to inspect.
+The JSON fallback keeps local setup simple. Postgres is the recommended deployment mode.
 
 ## Known Tradeoffs
 
-- Seeded users instead of full authentication.
+- Seeded accounts instead of open registration.
 - No real-time collaborative cursors.
 - No comments or suggestion mode.
 - No `.docx` import.
@@ -116,4 +130,3 @@ For a production deployment, I would replace the JSON file with Postgres or SQLi
 - Basic shared edit access instead of enterprise roles.
 
 These cuts keep the assignment focused on a complete end-to-end product slice within 4-6 hours.
-

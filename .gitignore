@@ -2,4 +2,5 @@ data/
 server.out.log
 server.err.log
 node_modules/
-
+test-results/
+playwright-report/

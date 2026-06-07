@@ -6,10 +6,16 @@
   "scripts": {
     "dev": "node src/server.js",
     "start": "node src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:e2e": "node e2e/document-flow.e2e.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.60.0",
+    "pg": "^8.21.0",
+    "quill": "^2.0.2",
+    "sanitize-html": "^2.17.4"
   }
 }
-

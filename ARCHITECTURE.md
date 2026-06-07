@@ -15,9 +15,9 @@ Browser UI
   v
 Node HTTP server
   |
-  | DocumentStore
+  | Auth/session, sanitizer, storage adapter
   v
-data/db.json
+Postgres DATABASE_URL or local data/db.json fallback
 ```
 
 ## Frontend
@@ -26,32 +26,39 @@ The frontend lives in `public/`:
 
 - `index.html` defines the dashboard, editor, toolbar, upload control, and share panel.
 - `styles.css` defines a restrained productivity-tool UI.
-- `app.js` handles user switching, document CRUD, save state, file import, sharing, and API calls.
+- `app.js` handles login/logout, document CRUD, save state, file import, sharing, and API calls.
 
-The editor uses `contenteditable` and native browser formatting commands. This is a deliberate timebox tradeoff. A production version would likely use TipTap, ProseMirror, Lexical, or Slate, but the current implementation still demonstrates the editing flow and formatting requirements without network dependencies.
+The editor uses Quill, served from local npm assets through `/vendor/quill.js` and `/vendor/quill.snow.css`. This gives the product a more reliable editing surface than raw `contenteditable` while keeping the app lightweight.
 
 ## Backend
 
 The backend lives in `src/`:
 
 - `server.js` serves static files and JSON API routes.
-- `documentStore.js` owns persistence, seeded users, document access checks, sharing logic, and import validation.
+- `auth.js` owns password hashing and signed session cookies.
+- `sanitize.js` owns server-side HTML sanitization.
+- `storeFactory.js` selects Postgres when `DATABASE_URL` exists and JSON fallback otherwise.
+- `documentStore.js` owns local JSON persistence.
+- `postgresDocumentStore.js` owns production Postgres persistence.
 
 Main API behavior:
 
 - `GET /api/users`
-- `GET /api/documents?userId=...`
+- `GET /api/session`
+- `POST /api/login`
+- `POST /api/logout`
+- `GET /api/documents`
 - `POST /api/documents`
-- `GET /api/documents/:id?userId=...`
+- `GET /api/documents/:id`
 - `PUT /api/documents/:id`
 - `POST /api/documents/:id/shares`
 - `POST /api/import`
 
 ## Data Model
 
-The JSON store contains:
+The storage model contains:
 
-- `users`: seeded review users.
+- `users`: seeded review users with PBKDF2 password hashes.
 - `documents`: title, HTML content, owner ID, created timestamp, updated timestamp.
 - `shares`: document ID, shared user ID, role, created timestamp.
 
@@ -67,6 +74,12 @@ Access rules are centralized in `DocumentStore`:
 - Owners cannot share a document with themselves.
 - Duplicate shares are ignored safely.
 
+The browser never sends a trusted `userId`. The server reads the signed HTTP-only session cookie and derives the current user from it.
+
+## Sanitization
+
+All document HTML is sanitized on create, update, and import before persistence. The sanitizer allows document formatting tags such as headings, paragraphs, lists, emphasis, underline, code, blockquote, and safe links, while stripping scripts, event handlers, and unsafe URL schemes.
+
 ## File Import
 
 Supported file types:
@@ -78,10 +91,14 @@ The server rejects unsupported extensions. Imported Markdown receives lightweigh
 
 ## Testing Strategy
 
-Automated tests use Node's built-in test runner:
+Automated tests use Node's built-in test runner and Playwright:
 
 - Sharing test: verifies a shared document appears under the recipient's shared list and remains owned by the creator.
 - File validation test: verifies unsupported import types are rejected.
+- Auth tests: verify password hashing and signed session validation.
+- Sanitizer test: verifies unsafe HTML is stripped while formatting remains.
+- Store factory test: verifies Postgres is selected when `DATABASE_URL` is configured.
+- E2E test: verifies login, create, edit, save, share, logout, and recipient access.
 
 Manual verification covers the end-to-end reviewer flow:
 
@@ -89,11 +106,11 @@ Manual verification covers the end-to-end reviewer flow:
 - Format content with toolbar controls.
 - Import `.txt` or `.md`.
 - Share with another seeded user.
-- Switch users and confirm owned/shared distinction.
+- Sign out, sign in as the recipient, and confirm owned/shared distinction.
 
 ## Deprioritized Work
 
-- Full authentication.
+- Open user registration.
 - Real-time collaboration indicators.
 - Comments and suggestions.
 - Version history.
@@ -101,4 +118,3 @@ Manual verification covers the end-to-end reviewer flow:
 - Role-based permission matrix.
 
 These are reasonable future improvements, but they would reduce confidence in the core product slice under the assignment time limit.
-

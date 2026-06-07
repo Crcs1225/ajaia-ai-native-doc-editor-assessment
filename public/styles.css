@@ -121,11 +121,61 @@ button:disabled {
 }
 
 select,
-.title-input {
+.title-input,
+input[type="email"],
+input[type="password"] {
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 9px 10px;
   width: 100%;
+}
+
+.login-view {
+  background: var(--bg);
+  display: grid;
+  inset: 0;
+  min-height: 100vh;
+  padding: 24px;
+  place-items: center;
+  position: fixed;
+  z-index: 20;
+}
+
+.login-view[hidden] {
+  display: none;
+}
+
+.login-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-width: 420px;
+  padding: 24px;
+  width: 100%;
+}
+
+.login-brand {
+  margin-bottom: 18px;
+}
+
+.account-box {
+  background: var(--panel-alt);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 12px;
+}
+
+.account-box span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.account-box strong {
+  overflow-wrap: anywhere;
 }
 
 .actions {
@@ -248,6 +298,11 @@ select,
   min-width: 40px;
 }
 
+.toolbar .ql-picker,
+.toolbar .ql-picker-label {
+  min-height: 38px;
+}
+
 .underline {
   text-decoration: underline;
 }
@@ -256,17 +311,22 @@ select,
   line-height: 1.6;
   min-height: calc(100vh - 190px);
   outline: none;
+}
+
+.editor .ql-editor {
+  font-size: 16px;
+  min-height: calc(100vh - 190px);
   padding: 36px;
 }
 
-.editor h1,
-.editor h2,
-.editor h3 {
+.editor .ql-editor h1,
+.editor .ql-editor h2,
+.editor .ql-editor h3 {
   line-height: 1.2;
 }
 
-.editor ul,
-.editor ol {
+.editor .ql-editor ul,
+.editor .ql-editor ol {
   padding-left: 24px;
 }
 
@@ -336,4 +396,3 @@ select,
     padding: 24px;
   }
 }
-

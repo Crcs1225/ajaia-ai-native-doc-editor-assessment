@@ -43,6 +43,11 @@
 - [x] Owned/shared document distinction
 - [x] Persistence for documents and shares
 - [x] At least one automated test
+- [x] Real login/session flow with seeded accounts
+- [x] Postgres support via `DATABASE_URL`
+- [x] Server-side HTML sanitization
+- [x] Quill rich-text editor
+- [x] Playwright E2E test
 - [ ] Live deployment
 
 ## Incomplete or Partial Features

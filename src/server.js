@@ -3,12 +3,15 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DocumentStore } from "./documentStore.js";
+import { clearSession, createSession, getSessionUserId, verifyPassword } from "./auth.js";
+import { createStore } from "./storeFactory.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
+const nodeModulesDir = path.join(__dirname, "..", "node_modules");
 const port = Number(process.env.PORT || 3000);
-const store = new DocumentStore(process.env.DB_FILE || path.join(process.cwd(), "data", "db.json"));
+const store = createStore({ env: process.env, filePath: process.env.DB_FILE || path.join(process.cwd(), "data", "db.json") });
+const sessionSecret = process.env.SESSION_SECRET || "dev-session-secret-change-me";
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -29,7 +32,7 @@ const server = createServer(async (request, response) => {
       return;
     }
 
-    await serveStatic(response, url.pathname);
+    await serveStatic(request, response, url.pathname);
   } catch (error) {
     sendJson(response, error.statusCode || 500, {
       error: error.message || "Unexpected server error."
@@ -42,20 +45,52 @@ server.listen(port, () => {
 });
 
 async function handleApi(request, response, url) {
+  if (request.method === "GET" && url.pathname === "/api/session") {
+    const userId = getSessionUserId(request.headers.cookie, sessionSecret);
+    if (!userId) {
+      sendJson(response, 200, { user: null });
+      return;
+    }
+    const users = await store.listUsers();
+    sendJson(response, 200, { user: users.find((user) => user.id === userId) ?? null });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/login") {
+    const body = await readJson(request);
+    const user = await store.findUserByEmail(body.email);
+    if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
+      throw Object.assign(new Error("Invalid email or password."), { statusCode: 401 });
+    }
+    response.setHeader("Set-Cookie", createSession(user.id, sessionSecret));
+    sendJson(response, 200, {
+      user: { id: user.id, name: user.name, email: user.email }
+    });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/logout") {
+    response.setHeader("Set-Cookie", clearSession());
+    sendJson(response, 200, { ok: true });
+    return;
+  }
+
   if (request.method === "GET" && url.pathname === "/api/users") {
+    requireSession(request);
     sendJson(response, 200, { users: await store.listUsers() });
     return;
   }
 
   if (request.method === "GET" && url.pathname === "/api/documents") {
-    const userId = requireQuery(url, "userId");
+    const userId = requireSession(request);
     sendJson(response, 200, await store.listDocumentsForUser(userId));
     return;
   }
 
   if (request.method === "POST" && url.pathname === "/api/documents") {
+    const userId = requireSession(request);
     const body = await readJson(request);
-    const document = await store.createDocument(body.ownerId, {
+    const document = await store.createDocument(userId, {
       title: body.title,
       content: body.content
     });
@@ -64,15 +99,16 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === "POST" && url.pathname === "/api/import") {
+    const userId = requireSession(request);
     const body = await readJson(request);
-    const document = await store.importDocument(body.ownerId, body);
+    const document = await store.importDocument(userId, body);
     sendJson(response, 201, { document });
     return;
   }
 
   const documentMatch = url.pathname.match(/^\/api\/documents\/([^/]+)$/);
   if (documentMatch && request.method === "GET") {
-    const userId = requireQuery(url, "userId");
+    const userId = requireSession(request);
     sendJson(response, 200, {
       document: await store.getDocument(documentMatch[1], userId)
     });
@@ -80,16 +116,18 @@ async function handleApi(request, response, url) {
   }
 
   if (documentMatch && request.method === "PUT") {
+    const userId = requireSession(request);
     const body = await readJson(request);
-    const document = await store.updateDocument(documentMatch[1], body.userId, body);
+    const document = await store.updateDocument(documentMatch[1], userId, body);
     sendJson(response, 200, { document });
     return;
   }
 
   const shareMatch = url.pathname.match(/^\/api\/documents\/([^/]+)\/shares$/);
   if (shareMatch && request.method === "POST") {
+    const userId = requireSession(request);
     const body = await readJson(request);
-    const share = await store.shareDocument(shareMatch[1], body.ownerId, body.recipientId);
+    const share = await store.shareDocument(shareMatch[1], userId, body.recipientId);
     sendJson(response, 201, { share });
     return;
   }
@@ -97,7 +135,17 @@ async function handleApi(request, response, url) {
   sendJson(response, 404, { error: "Route not found." });
 }
 
-async function serveStatic(response, pathname) {
+async function serveStatic(request, response, pathname) {
+  if (pathname === "/vendor/quill.js") {
+    await sendFile(response, path.join(nodeModulesDir, "quill", "dist", "quill.js"));
+    return;
+  }
+
+  if (pathname === "/vendor/quill.snow.css") {
+    await sendFile(response, path.join(nodeModulesDir, "quill", "dist", "quill.snow.css"));
+    return;
+  }
+
   const safePath = pathname === "/" ? "/index.html" : pathname;
   const normalized = path.normalize(safePath).replace(/^(\.\.[/\\])+/, "");
   const filePath = path.join(publicDir, normalized);
@@ -108,11 +156,7 @@ async function serveStatic(response, pathname) {
   }
 
   try {
-    const content = await readFile(filePath);
-    response.writeHead(200, {
-      "Content-Type": contentTypes[path.extname(filePath)] || "application/octet-stream"
-    });
-    response.end(content);
+    await sendFile(response, filePath);
   } catch (error) {
     if (error.code === "ENOENT") {
       const index = await readFile(path.join(publicDir, "index.html"));
@@ -122,6 +166,14 @@ async function serveStatic(response, pathname) {
     }
     throw error;
   }
+}
+
+async function sendFile(response, filePath) {
+  const content = await readFile(filePath);
+  response.writeHead(200, {
+    "Content-Type": contentTypes[path.extname(filePath)] || "application/octet-stream"
+  });
+  response.end(content);
 }
 
 async function readJson(request) {
@@ -135,16 +187,15 @@ async function readJson(request) {
   return raw ? JSON.parse(raw) : {};
 }
 
-function requireQuery(url, key) {
-  const value = url.searchParams.get(key);
-  if (!value) {
-    throw Object.assign(new Error(`${key} is required.`), { statusCode: 400 });
+function requireSession(request) {
+  const userId = getSessionUserId(request.headers.cookie, sessionSecret);
+  if (!userId) {
+    throw Object.assign(new Error("Authentication required."), { statusCode: 401 });
   }
-  return value;
+  return userId;
 }
 
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
   response.end(JSON.stringify(payload));
 }
-

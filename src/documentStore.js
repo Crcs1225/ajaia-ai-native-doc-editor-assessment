@@ -2,14 +2,10 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
+import { sanitizeDocumentHtml } from "./sanitize.js";
+import { seedUsers } from "./seedData.js";
+
 const now = () => new Date().toISOString();
-
-const seedUsers = [
-  { id: "user_alex", name: "Alex Owner", email: "alex@ajaia.test" },
-  { id: "user_blair", name: "Blair Reviewer", email: "blair@ajaia.test" },
-  { id: "user_casey", name: "Casey Editor", email: "casey@ajaia.test" }
-];
-
 const defaultContent = "<h1>Untitled document</h1><p>Start writing...</p>";
 
 function normalizeTitle(title) {
@@ -42,7 +38,21 @@ export class DocumentStore {
   async init() {
     await mkdir(path.dirname(this.filePath), { recursive: true });
     try {
-      await this.#read();
+      const db = await this.#read();
+      let changed = false;
+      for (const seedUser of seedUsers) {
+        const existing = db.users.find((user) => user.id === seedUser.id);
+        if (!existing) {
+          db.users.push(seedUser);
+          changed = true;
+        } else if (existing.passwordHash !== seedUser.passwordHash) {
+          Object.assign(existing, seedUser);
+          changed = true;
+        }
+      }
+      if (changed) {
+        await this.#write(db);
+      }
     } catch (error) {
       if (error.code !== "ENOENT") {
         throw error;
@@ -57,7 +67,12 @@ export class DocumentStore {
 
   async listUsers() {
     const db = await this.#read();
-    return db.users;
+    return db.users.map(({ passwordHash, password, ...user }) => user);
+  }
+
+  async findUserByEmail(email) {
+    const db = await this.#read();
+    return db.users.find((user) => user.email.toLowerCase() === String(email).toLowerCase()) ?? null;
   }
 
   async listDocumentsForUser(userId) {
@@ -112,7 +127,7 @@ export class DocumentStore {
     const document = {
       id: `doc_${randomUUID()}`,
       title: normalizeTitle(input.title),
-      content: ensureString(input.content) || defaultContent,
+      content: sanitizeDocumentHtml(ensureString(input.content) || defaultContent),
       ownerId,
       createdAt: timestamp,
       updatedAt: timestamp
@@ -134,7 +149,7 @@ export class DocumentStore {
     }
 
     if (Object.hasOwn(input, "content")) {
-      document.content = ensureString(input.content);
+      document.content = sanitizeDocumentHtml(ensureString(input.content));
     }
 
     document.updatedAt = now();
@@ -187,7 +202,7 @@ export class DocumentStore {
     this.validateImportFile(input.fileName);
     return this.createDocument(ownerId, {
       title: input.title || path.basename(input.fileName, path.extname(input.fileName)),
-      content: textToHtml(input.content ?? "")
+      content: sanitizeDocumentHtml(textToHtml(input.content ?? ""))
     });
   }
 
@@ -279,4 +294,3 @@ export function textToHtml(text) {
 
   return html.join("") || "<p></p>";
 }
-

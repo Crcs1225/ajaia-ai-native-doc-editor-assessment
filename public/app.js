@@ -1,6 +1,6 @@
 const state = {
   users: [],
-  currentUserId: localStorage.getItem("ajaia.currentUserId") || "user_alex",
+  currentUser: null,
   currentDocumentId: localStorage.getItem("ajaia.currentDocumentId") || "",
   currentDocument: null,
   documents: { owned: [], shared: [] },
@@ -8,7 +8,12 @@ const state = {
 };
 
 const elements = {
-  userSelect: document.querySelector("#userSelect"),
+  loginView: document.querySelector("#loginView"),
+  loginForm: document.querySelector("#loginForm"),
+  emailInput: document.querySelector("#emailInput"),
+  passwordInput: document.querySelector("#passwordInput"),
+  currentUserLabel: document.querySelector("#currentUserLabel"),
+  logoutButton: document.querySelector("#logoutButton"),
   shareUserSelect: document.querySelector("#shareUserSelect"),
   ownedDocuments: document.querySelector("#ownedDocuments"),
   sharedDocuments: document.querySelector("#sharedDocuments"),
@@ -26,10 +31,42 @@ const elements = {
   toast: document.querySelector("#toast")
 };
 
+const quill = new Quill("#editor", {
+  modules: {
+    toolbar: "#toolbar"
+  },
+  placeholder: "Create or select a document to start editing.",
+  theme: "snow"
+});
+
 await boot();
 
 async function boot() {
   bindEvents();
+  await loadSession();
+}
+
+function bindEvents() {
+  elements.loginForm.addEventListener("submit", login);
+  elements.logoutButton.addEventListener("click", logout);
+  elements.createDocument.addEventListener("click", createDocument);
+  elements.fileImport.addEventListener("change", importFile);
+  elements.saveDocument.addEventListener("click", saveDocument);
+  elements.shareDocument.addEventListener("click", shareDocument);
+  elements.titleInput.addEventListener("input", markDirty);
+  quill.on("text-change", markDirty);
+}
+
+async function loadSession() {
+  const data = await api("/api/session");
+  state.currentUser = data.user;
+
+  if (!state.currentUser) {
+    showLogin();
+    return;
+  }
+
+  showApp();
   await loadUsers();
   await loadDocuments();
 
@@ -40,56 +77,55 @@ async function boot() {
   }
 }
 
-function bindEvents() {
-  elements.userSelect.addEventListener("change", async () => {
-    state.currentUserId = elements.userSelect.value;
-    localStorage.setItem("ajaia.currentUserId", state.currentUserId);
+async function login(event) {
+  event.preventDefault();
+  try {
+    const data = await api("/api/login", {
+      method: "POST",
+      body: {
+        email: elements.emailInput.value,
+        password: elements.passwordInput.value
+      }
+    });
+    state.currentUser = data.user;
     state.currentDocumentId = "";
     localStorage.removeItem("ajaia.currentDocumentId");
-    state.currentDocument = null;
+    showToast("Signed in.");
+    showApp();
+    await loadUsers();
     await loadDocuments();
     renderEditorEmpty();
-  });
+  } catch (error) {
+    showToast(error.message, true);
+  }
+}
 
-  elements.createDocument.addEventListener("click", createDocument);
-  elements.fileImport.addEventListener("change", importFile);
-  elements.saveDocument.addEventListener("click", saveDocument);
-  elements.shareDocument.addEventListener("click", shareDocument);
+async function logout() {
+  await api("/api/logout", { method: "POST" });
+  state.currentUser = null;
+  state.currentDocument = null;
+  state.currentDocumentId = "";
+  localStorage.removeItem("ajaia.currentDocumentId");
+  showLogin();
+}
 
-  elements.editor.addEventListener("input", markDirty);
-  elements.titleInput.addEventListener("input", markDirty);
+function showLogin() {
+  elements.loginView.hidden = false;
+}
 
-  document.querySelectorAll("[data-command]").forEach((button) => {
-    button.addEventListener("click", () => {
-      document.execCommand(button.dataset.command, false, null);
-      elements.editor.focus();
-      markDirty();
-    });
-  });
-
-  document.querySelectorAll("[data-block]").forEach((button) => {
-    button.addEventListener("click", () => {
-      document.execCommand("formatBlock", false, button.dataset.block);
-      elements.editor.focus();
-      markDirty();
-    });
-  });
+function showApp() {
+  elements.loginView.hidden = true;
+  elements.currentUserLabel.textContent = `${state.currentUser.name} (${state.currentUser.email})`;
 }
 
 async function loadUsers() {
   const data = await api("/api/users");
   state.users = data.users;
-
-  elements.userSelect.innerHTML = state.users
-    .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} (${escapeHtml(user.email)})</option>`)
-    .join("");
-  elements.userSelect.value = state.currentUserId;
-
   renderShareUserOptions();
 }
 
 async function loadDocuments() {
-  state.documents = await api(`/api/documents?userId=${encodeURIComponent(state.currentUserId)}`);
+  state.documents = await api("/api/documents");
   renderDocumentLists();
 }
 
@@ -121,13 +157,13 @@ function renderDocumentCards(documents, label) {
 
 async function openDocument(documentId) {
   try {
-    const data = await api(`/api/documents/${encodeURIComponent(documentId)}?userId=${encodeURIComponent(state.currentUserId)}`);
+    const data = await api(`/api/documents/${encodeURIComponent(documentId)}`);
     state.currentDocument = data.document;
     state.currentDocumentId = data.document.id;
     localStorage.setItem("ajaia.currentDocumentId", state.currentDocumentId);
 
     elements.titleInput.value = data.document.title;
-    elements.editor.innerHTML = data.document.content;
+    quill.root.innerHTML = data.document.content;
     elements.ownerLabel.textContent = `Owner: ${data.document.ownerName}`;
     state.dirty = false;
     setStatus("Saved");
@@ -143,7 +179,6 @@ async function createDocument() {
   const data = await api("/api/documents", {
     method: "POST",
     body: {
-      ownerId: state.currentUserId,
       title: "Untitled document",
       content: "<h1>Untitled document</h1><p>Start writing...</p>"
     }
@@ -170,7 +205,6 @@ async function importFile(event) {
   const data = await api("/api/import", {
     method: "POST",
     body: {
-      ownerId: state.currentUserId,
       fileName: file.name,
       content: text
     }
@@ -191,9 +225,8 @@ async function saveDocument() {
   const data = await api(`/api/documents/${encodeURIComponent(state.currentDocumentId)}`, {
     method: "PUT",
     body: {
-      userId: state.currentUserId,
       title: elements.titleInput.value,
-      content: elements.editor.innerHTML
+      content: quill.root.innerHTML
     }
   });
 
@@ -214,16 +247,20 @@ async function shareDocument() {
     return;
   }
 
-  if (state.currentDocument.ownerId !== state.currentUserId) {
+  if (state.currentDocument.ownerId !== state.currentUser.id) {
     showToast("Only the owner can share this document.", true);
     return;
   }
 
   const recipientId = elements.shareUserSelect.value;
+  if (!recipientId) {
+    showToast("No available user selected.", true);
+    return;
+  }
+
   await api(`/api/documents/${encodeURIComponent(state.currentDocument.id)}/shares`, {
     method: "POST",
     body: {
-      ownerId: state.currentUserId,
       recipientId
     }
   });
@@ -241,7 +278,7 @@ function renderSharePanel() {
     return;
   }
 
-  const isOwner = state.currentDocument.ownerId === state.currentUserId;
+  const isOwner = state.currentDocument.ownerId === state.currentUser.id;
   elements.shareDocument.disabled = !isOwner;
   elements.shareUserSelect.disabled = !isOwner;
 
@@ -263,8 +300,9 @@ function renderSharePanel() {
 
 function renderShareUserOptions() {
   const currentShares = new Set((state.currentDocument?.shares ?? []).map((share) => share.userId));
+  const currentUserId = state.currentUser?.id;
   const options = state.users
-    .filter((user) => user.id !== state.currentUserId && !currentShares.has(user.id))
+    .filter((user) => user.id !== currentUserId && !currentShares.has(user.id))
     .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} (${escapeHtml(user.email)})</option>`)
     .join("");
 
@@ -276,7 +314,7 @@ function renderEditorEmpty() {
   state.currentDocument = null;
   state.currentDocumentId = "";
   elements.titleInput.value = "Select or create a document";
-  elements.editor.innerHTML = "<h1>Ajaia Docs Lite</h1><p>Create or select a document to start editing.</p>";
+  quill.root.innerHTML = "<h1>Ajaia Docs Lite</h1><p>Create or select a document to start editing.</p>";
   elements.ownerLabel.textContent = "No document selected";
   setStatus("Idle");
   renderSharePanel();

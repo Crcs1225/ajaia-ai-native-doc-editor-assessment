@@ -24,25 +24,26 @@ I rejected or narrowed AI suggestions that would overbuild the assignment:
 - `.docx` parsing as a requirement.
 - Production authentication.
 - Enterprise-grade role permissions.
-- Dependency-heavy editor setup that could slow down local review.
+- A full framework rewrite just to adopt a richer editor.
 
-The final implementation uses a dependency-free Node server and browser editor because it is easier to run, inspect, and submit reliably within the timebox.
+The final implementation keeps the Node server but adds focused production improvements: Postgres support, signed-session auth, server-side HTML sanitization, Quill editing, and Playwright E2E coverage.
 
 ## Human Judgment Applied
 
 The key human decisions were:
 
-- Use seeded users to demonstrate sharing without spending time on auth.
-- Store editable HTML because it matches the browser-native editor approach.
+- Use seeded login accounts to demonstrate real session flow without building registration.
+- Store sanitized editable HTML because it matches the Quill editor approach.
 - Limit uploads to `.txt` and `.md`, and state that clearly in UI and docs.
 - Keep access checks in the backend store rather than trusting frontend state.
-- Include automated tests for the highest-risk business rule: document sharing.
+- Include automated tests for auth, sanitization, storage selection, and the main browser workflow.
 
 ## Verification Approach
 
 Correctness and reliability were verified through:
 
 - Automated tests with Node's built-in test runner.
+- Playwright E2E test for the full create, save, share, and recipient-open flow.
 - Manual create, edit, save, refresh, and reopen checks.
 - Manual upload checks for supported and unsupported file types.
 - Manual sharing check by switching seeded users.
@@ -58,5 +59,4 @@ Before submission, I checked that:
 - Save status is visible.
 - Upload limitations are shown near the upload control.
 - Sharing shows owner intent and current shared users.
-- Seeded users are visible in the UI and documented in the README.
-
+- Seeded credentials are visible in the UI and documented in the README.

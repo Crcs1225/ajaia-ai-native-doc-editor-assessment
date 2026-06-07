@@ -4,9 +4,32 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ajaia Docs Lite</title>
+    <link rel="stylesheet" href="/vendor/quill.snow.css">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+    <section id="loginView" class="login-view">
+      <form id="loginForm" class="login-card">
+        <div class="brand login-brand">
+          <div class="brand-mark">A</div>
+          <div>
+            <h1>Ajaia Docs Lite</h1>
+            <p>Sign in to manage shared documents</p>
+          </div>
+        </div>
+        <label class="field">
+          <span>Email</span>
+          <input id="emailInput" type="email" autocomplete="email" value="alex@ajaia.test">
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input id="passwordInput" type="password" autocomplete="current-password" value="password123">
+        </label>
+        <button class="primary" type="submit">Sign in</button>
+        <p class="hint">Demo users use password <strong>password123</strong>: alex@ajaia.test, blair@ajaia.test, casey@ajaia.test.</p>
+      </form>
+    </section>
+
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand">
@@ -17,10 +40,11 @@
           </div>
         </div>
 
-        <label class="field">
-          <span>Current user</span>
-          <select id="userSelect"></select>
-        </label>
+        <div class="account-box">
+          <span>Signed in as</span>
+          <strong id="currentUserLabel">Loading...</strong>
+          <button id="logoutButton">Sign out</button>
+        </div>
 
         <div class="actions">
           <button id="createDocument" class="primary">New document</button>
@@ -60,19 +84,21 @@
 
         <div class="editor-layout">
           <section class="editor-panel">
-            <div class="toolbar" aria-label="Formatting toolbar">
-              <button data-command="bold" title="Bold"><strong>B</strong></button>
-              <button data-command="italic" title="Italic"><em>I</em></button>
-              <button data-command="underline" title="Underline"><span class="underline">U</span></button>
-              <button data-block="h1" title="Heading 1">H1</button>
-              <button data-block="h2" title="Heading 2">H2</button>
-              <button data-block="p" title="Paragraph">P</button>
-              <button data-command="insertUnorderedList" title="Bulleted list">UL</button>
-              <button data-command="insertOrderedList" title="Numbered list">OL</button>
+            <div id="toolbar" class="toolbar" aria-label="Formatting toolbar">
+              <button class="ql-bold" title="Bold"></button>
+              <button class="ql-italic" title="Italic"></button>
+              <button class="ql-underline" title="Underline"></button>
+              <select class="ql-header" title="Heading">
+                <option value="1">Heading 1</option>
+                <option value="2">Heading 2</option>
+                <option selected>Paragraph</option>
+              </select>
+              <button class="ql-list" value="bullet" title="Bulleted list"></button>
+              <button class="ql-list" value="ordered" title="Numbered list"></button>
               <button id="saveDocument" class="save-button">Save</button>
             </div>
 
-            <div id="editor" class="editor" contenteditable="true" aria-label="Document editor">
+            <div id="editor" class="editor" aria-label="Document editor">
               <h1>Ajaia Docs Lite</h1>
               <p>Create or select a document to start editing.</p>
             </div>
@@ -95,7 +121,7 @@
     </div>
 
     <div id="toast" class="toast" hidden></div>
+    <script src="/vendor/quill.js"></script>
     <script src="/app.js" type="module"></script>
   </body>
 </html>
-
